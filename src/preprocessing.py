@@ -127,11 +127,15 @@ cList = {
 
 c_re = re.compile('(%s)' % '|'.join(cList.keys()))
 
-def expandContractions(text, c_re=c_re):
+def expand_contractions(text, c_re=c_re):
     def replace(match):
         return cList[match.group(0)]
     return c_re.sub(replace, text)
 
+def segment_word(word):
+    if '!' in word or '?' in word or '.' in word:
+        return [word]
+    return segment(word)
 
 def process_single_tweet(tweet, lemmatize=False):
     """ Process and tokenize single tweet into a list of tokens.
@@ -144,16 +148,17 @@ def process_single_tweet(tweet, lemmatize=False):
     
     # Apostrophe expansion
     tweet = tweet.replace("’","'")
-    tweet = expandContractions(tweet)   
+    tweet = expand_contractions(tweet)   
     
-    # Remove twitter handles, RT, url. Remain only letters, numbers, ! and ?
+    # Remove twitter handles, RT, url. Remain only letters, numbers, !, ? and .
     tweet = ' '.join(re.sub( \
-    r"(@[A-Za-z]+)|^rt |(\w+:\/*\S+)|[^a-zA-Z0-9\s!?]", "" ,tweet).split())
+    r"(@[A-Za-z]+)|^rt |(\w+:\/*\S+)|[^a-zA-Z0-9\s!?.]", "" ,tweet).split())
+    print(tweet)
     
     # Word segmentation.
     load()
     splitted_tweet = []
-    [splitted_tweet.extend(segment(word)) for word in tweet.split()]
+    [splitted_tweet.extend(segment_word(word)) for word in tweet.split()]
     tweet = ' '.join(splitted_tweet)
     
     # Remove url token
