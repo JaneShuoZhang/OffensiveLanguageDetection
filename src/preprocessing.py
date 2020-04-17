@@ -1,6 +1,8 @@
 import re
 from nltk.tokenize import TweetTokenizer
 from nltk.stem import WordNetLemmatizer
+from wordsegment import load, segment
+import emoji
 
 cList = {
   "ain't": "am not",
@@ -131,22 +133,28 @@ def expandContractions(text, c_re=c_re):
     return c_re.sub(replace, text)
 
 
-def process_single_tweet(tweet):
+def process_single_tweet(tweet, lemmatize=False):
     """ Process and tokenize single tweet into a list of tokens.
-    """
-    
-    # Apostrophe expansion
-    tweet = tweet.replace("’","'")
-    tweet = expandContractions(tweet)
-    
-    # TODO: Split camel-case word into several words, especially in hashtags.
+    """        
+    # Replace Emoji by substituted phrase
+    tweet = emoji.demojize(tweet, delimiters=(',', ','))
     
     # Lowercase tweets
     tweet = tweet.lower()
     
+    # Apostrophe expansion
+    tweet = tweet.replace("’","'")
+    tweet = expandContractions(tweet)   
+    
     # Remove twitter handles, RT, url. Remain only letters, numbers, ! and ?
     tweet = ' '.join(re.sub( \
     r"(@[A-Za-z]+)|^rt |(\w+:\/*\S+)|[^a-zA-Z0-9\s!?]", "" ,tweet).split())
+    
+    # Word segmentation.
+    load()
+    splitted_tweet = []
+    [splitted_tweet.extend(segment(word)) for word in tweet.split()]
+    tweet = ' '.join(splitted_tweet)
     
     # Remove url token
     tweet = tweet.replace('url','')
@@ -155,8 +163,9 @@ def process_single_tweet(tweet):
     twt_tokenizer = TweetTokenizer()
     tokens = twt_tokenizer.tokenize(tweet)
     
-    # Lemmatize: Hmmm, I don't think it's good. Temporarily commented out.
-    #wordnet_lemmatizer = WordNetLemmatizer()
-    #tokens = [wordnet_lemmatizer.lemmatize(word, pos = "v") for word in tokens]
+    # Lemmatize
+    if lemmatize:
+        wordnet_lemmatizer = WordNetLemmatizer()
+        tokens = [wordnet_lemmatizer.lemmatize(word, pos = "v") for word in tokens]
 
     return tokens
