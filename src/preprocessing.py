@@ -1,8 +1,18 @@
+import pandas as pd
+import os
 import re
+import time
 from nltk.tokenize import TweetTokenizer
 from nltk.stem import WordNetLemmatizer
 from wordsegment import load, segment
 import emoji
+from utils import load_train_data, load_test_data_a
+
+pd.options.mode.chained_assignment = None  # default='warn'
+
+PROCESSED_DATA_FOLDER = "processed_data"
+PROCESSED_TRAIN_DATA_FILE = "train.csv"
+PROCESSED_TEST_DATA_FILE = "test_a.csv"
 
 cList = {
   "ain't": "am not",
@@ -138,7 +148,7 @@ def segment_word(word):
     return segment(word)
 
 def process_single_tweet(tweet, lemmatize=False):
-    """ Process and tokenize single tweet into a list of tokens.
+    """ Process and tokenize single tweet.
     """        
     # Replace Emoji by substituted phrase
     tweet = emoji.demojize(tweet, delimiters=(',', ','))
@@ -153,7 +163,6 @@ def process_single_tweet(tweet, lemmatize=False):
     # Remove twitter handles, RT, url. Remain only letters, numbers, !, ? and .
     tweet = ' '.join(re.sub( \
     r"(@[A-Za-z]+)|^rt |(\w+:\/*\S+)|[^a-zA-Z0-9\s!?.]", "" ,tweet).split())
-    print(tweet)
     
     # Word segmentation.
     load()
@@ -173,4 +182,55 @@ def process_single_tweet(tweet, lemmatize=False):
         wordnet_lemmatizer = WordNetLemmatizer()
         tokens = [wordnet_lemmatizer.lemmatize(word, pos = "v") for word in tokens]
 
-    return tokens
+    tweet = ' '.join(tokens)
+    return tweet
+
+
+def process_data(df, output_file_path, replace=False):
+    """ Pre-process dataset. If processed data already exist in folder, directly load the data instead of processing again, if replace == False.
+
+    Arguments:
+        df {DataFrame} -- The dataset.
+        output_file_path {string} -- Path of outputed processed data.
+        replace {bool} -- Whether to replace the existing processed data if the data was processed before.
+    """
+    if not replace and os.path.exists(output_file_path):
+        df = pd.read_csv(output_file_path)
+        print("Processed data already exists. Direct load it.")
+        print("number of processed data: {}".format(df.shape[0]))
+        return df
+    else:        
+        if not os.path.exists(PROCESSED_DATA_FOLDER):
+            os.makedirs(PROCESSED_DATA_FOLDER)
+        start_time = time.time()
+        df.dropna()
+        df['tweet'] = df['tweet'].apply(process_single_tweet)
+        df.to_csv(output_file_path, index=False)
+        print("number of  processed data: {}".format(df.shape[0]))
+        end_time = time.time()
+        print("Process data in {} mins.".format((end_time - start_time)/60))
+        return df
+
+
+def process_train_data(df, replace=False):
+    """ Pre-process training data.
+    """
+    output_file_path = os.path.join(PROCESSED_DATA_FOLDER, PROCESSED_TRAIN_DATA_FILE)
+    return process_data(df, output_file_path, replace)
+
+
+def process_test_data(df, replace=False):
+    """ Pre-process test data.
+    """
+    output_file_path = os.path.join(PROCESSED_DATA_FOLDER, PROCESSED_TEST_DATA_FILE)
+    return process_data(df, output_file_path, replace)
+
+
+if __name__ == "__main__":
+    print("Start Processing Test Data:")
+    test_data = load_test_data_a()
+    process_test_data(test_data)
+
+    print("Start Processing Training Data:")
+    train_data = load_train_data()
+    process_train_data(train_data)
