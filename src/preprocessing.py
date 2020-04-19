@@ -187,12 +187,22 @@ def process_single_tweet(tweet, lemmatize=False):
 
 
 def process_data(df, output_file_path, replace=False):
-    """ Pre-process dataset. If processed data already exist in folder, directly load the data instead of processing again, if replace == False.
+    """Pre-process dataset. If processed data already exist in folder, 
+    directly load the data instead of processing again, if replace == False.
 
-    Arguments:
-        df {DataFrame} -- The dataset.
-        output_file_path {string} -- Path of outputed processed data.
-        replace {bool} -- Whether to replace the existing processed data if the data was processed before.
+    Parameters
+    ----------
+    df : DataFrame
+        The dataset.
+    output_file_path : string 
+        Path of outputed processed data.
+    replace : bool
+        Whether to replace the existing processed data if the data was processed before.
+
+    Returns
+    -------
+    DataFrame
+        The pre-processed data.
     """
     if not replace and os.path.exists(output_file_path):
         df = pd.read_csv(output_file_path)
@@ -204,7 +214,9 @@ def process_data(df, output_file_path, replace=False):
             os.makedirs(PROCESSED_DATA_FOLDER)
         start_time = time.time()
         df.dropna()
-        df['tweet'] = df['tweet'].apply(process_single_tweet)
+        df.rename(columns={'tweet': 'raw_tweet'}, inplace=True)
+        df['tweet'] = df['raw_tweet'].apply(process_single_tweet)
+        df.drop(['raw_tweet'], axis=1, inplace=True)
         df.to_csv(output_file_path, index=False)
         print("number of  processed data: {}".format(df.shape[0]))
         end_time = time.time()
@@ -231,6 +243,6 @@ if __name__ == "__main__":
     test_data = load_test_data_a()
     process_test_data(test_data)
 
-    print("Start Processing Training Data:")
+    print("Start Processing Train Data:")
     train_data = load_train_data()
     process_train_data(train_data)
