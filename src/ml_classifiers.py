@@ -52,6 +52,7 @@ class MLDetector:
             return {'score': tuner.best_score_,
                     'params': tuner.best_params_}
         else:
+            print("Best parameter: ", tuner.best_params_)
             param_scores = {}
             results = tuner.cv_results_
             for i, param in enumerate(tuner.cv_results_['params']):
@@ -111,7 +112,8 @@ def run_ngram_logistic_regression():
 
     # Hyperparameter tuning and select best model
     lr_classifier = MLDetector('LR')
-    params_set = {'penalty':['l2'],'solver':['sag','newton-cg','lbfgs']}
+    params_set = {'penalty':['l1'],'solver':['saga','liblinear']}
+    #params_set = {'penalty':['l2'],'solver':['sag','newton-cg','lbfgs']}
     lr_tune = lr_classifier.hyper_tune(train_X, train_y, params_set, best_only=False)
     print('Hyperparameter Tuning: ', lr_tune)
 
