@@ -7,6 +7,7 @@ from nltk.stem import WordNetLemmatizer
 from wordsegment import load, segment
 import emoji
 from utils import load_train_data, load_test_data_a
+import symspell_python as spell_checkers
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -147,6 +148,49 @@ def segment_word(word):
         return [word]
     return segment(word)
 
+
+def process_tweets(tweets_column):
+    # Replace Emoji by substituted phrase
+    tweets_column = tweets_column.apply(lambda x: emoji.demojize(x, delimiters=(',', ',')))
+    # Lowercase tweets
+    tweets_column = tweets_column.apply(lambda x: x.lower())
+    # Apostrophe expansion
+    tweets_column = tweets_column.apply(lambda x: x.replace("’", "'"))
+    tweets_column = tweets_column.apply(lambda x: expand_contractions(x))
+    # Remove url, hashtags, cashtags, twitter handles, and RT. Only words
+    tweets_column = tweets_column.apply(
+        lambda x: ' '.join(re.sub(r"(@[A-Za-z]+)|^rt |(\w+:\/*\S+)|[^a-zA-Z0-9\s!?.]", "", x).split()))
+    # Remove url token
+    tweets_column = tweets_column.apply(lambda x: x.replace('url', ''))
+
+    # Word segmentation.
+    load()
+    tweets_column = tweets_column.apply(lambda x: [segment_word(word) for word in x.split()])
+    # flatten
+    tweets_column = tweets_column.apply(lambda x: ' '.join([item for splitted in x for item in splitted]))
+
+    # Lemmatisation
+    tokeniser = TweetTokenizer()
+    wordnet_lemmatizer = WordNetLemmatizer()
+    tweets_column = tweets_column.apply(lambda x: [word for word in tokeniser.tokenize(x)])
+
+    spell_checkers.create_dictionary("eng_dict.txt")
+    print("Spell checker...")
+    for i in range(len(tweets_column)):
+        try:
+            # print('%i out of %i' % (i, len(tweets_column)))
+            for j in range(len(tweets_column[i])):
+                suggs = spell_checkers.get_suggestions(tweets_column[i][j])
+                if suggs:
+                    best_sugg = str(suggs[0])
+                    tweets_column[i][j] = best_sugg
+        except:
+            continue
+
+    tweets_column = tweets_column.apply(lambda x: ' '.join([wordnet_lemmatizer.lemmatize(word, pos="v") for word in x]))
+
+    return tweets_column
+
 def process_single_tweet(tweet, lemmatize=False):
     """ Process and tokenize single tweet.
     """        
@@ -215,7 +259,8 @@ def process_data(df, output_file_path, replace=False):
         start_time = time.time()
         df.dropna()
         df.rename(columns={'tweet': 'raw_tweet'}, inplace=True)
-        df['tweet'] = df['raw_tweet'].apply(process_single_tweet)
+        #df['tweet'] = df['raw_tweet'].apply(process_single_tweet)
+        df['tweet'] = process_tweets(df['raw_tweet'])
         df.drop(['raw_tweet'], axis=1, inplace=True)
         df.to_csv(output_file_path, index=False)
         print("number of  processed data: {}".format(df.shape[0]))
