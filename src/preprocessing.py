@@ -6,7 +6,7 @@ from nltk.tokenize import TweetTokenizer
 from nltk.stem import WordNetLemmatizer
 from wordsegment import load, segment
 import emoji
-from utils import load_train_data, load_test_data_a
+from utils import load_train_data, load_test_data_a, load_trial_data
 import symspell_python as spell_checkers
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -14,6 +14,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 PROCESSED_DATA_FOLDER = "processed_data"
 PROCESSED_TRAIN_DATA_FILE = "train.csv"
 PROCESSED_TEST_DATA_FILE = "test_a.csv"
+PROCESSED_TRIAL_DATA_FILE = "trial.csv"
 
 cList = {
   "ain't": "am not",
@@ -157,7 +158,7 @@ def process_tweets(tweets_column):
     # Apostrophe expansion
     tweets_column = tweets_column.apply(lambda x: x.replace("’", "'"))
     tweets_column = tweets_column.apply(lambda x: expand_contractions(x))
-    # Remove url, hashtags, cashtags, twitter handles, and RT. Only words
+    # Remove url, hashtags, cashtags, twitter handles, and RT. Only words, numbers, !, ? and .
     tweets_column = tweets_column.apply(
         lambda x: ' '.join(re.sub(r"(@[A-Za-z]+)|^rt |(\w+:\/*\S+)|[^a-zA-Z0-9\s!?.]", "", x).split()))
     # Remove url token
@@ -169,9 +170,8 @@ def process_tweets(tweets_column):
     # flatten
     tweets_column = tweets_column.apply(lambda x: ' '.join([item for splitted in x for item in splitted]))
 
-    # Lemmatisation
+    # Tokenize
     tokeniser = TweetTokenizer()
-    wordnet_lemmatizer = WordNetLemmatizer()
     tweets_column = tweets_column.apply(lambda x: [word for word in tokeniser.tokenize(x)])
 
     spell_checkers.create_dictionary("eng_dict.txt")
@@ -187,11 +187,14 @@ def process_tweets(tweets_column):
         except:
             continue
 
+    # Lemmatisation
+    wordnet_lemmatizer = WordNetLemmatizer()
     tweets_column = tweets_column.apply(lambda x: ' '.join([wordnet_lemmatizer.lemmatize(word, pos="v") for word in x]))
 
     return tweets_column
 
-def process_single_tweet(tweet, lemmatize=False):
+
+def process_single_tweet(tweet, lemmatize=True):
     """ Process and tokenize single tweet.
     """        
     # Replace Emoji by substituted phrase
@@ -220,6 +223,17 @@ def process_single_tweet(tweet, lemmatize=False):
     # Tokenize
     twt_tokenizer = TweetTokenizer()
     tokens = twt_tokenizer.tokenize(tweet)
+
+    # Spell check
+    spell_checkers.create_dictionary("eng_dict.txt")
+    try:
+        for i in range(len(tokens)):
+                suggs = spell_checkers.get_suggestions(tokens[i])
+                if suggs:
+                    best_sugg = str(suggs[0])
+                    tokens[i] = best_sugg
+    except:
+        print("Warning in spell checking.")
     
     # Lemmatize
     if lemmatize:
@@ -270,20 +284,32 @@ def process_data(df, output_file_path, replace=False):
 
 
 def process_train_data(df, replace=False):
-    """ Pre-process training data.
+    """Pre-process training data.
     """
     output_file_path = os.path.join(PROCESSED_DATA_FOLDER, PROCESSED_TRAIN_DATA_FILE)
     return process_data(df, output_file_path, replace)
 
 
 def process_test_data(df, replace=False):
-    """ Pre-process test data.
+    """Pre-process test data.
     """
     output_file_path = os.path.join(PROCESSED_DATA_FOLDER, PROCESSED_TEST_DATA_FILE)
     return process_data(df, output_file_path, replace)
 
 
+def process_trial_data(df, replace=False):
+    """Pre-process trial data.
+    """
+    output_file_path = os.path.join(PROCESSED_DATA_FOLDER, PROCESSED_TRIAL_DATA_FILE)
+    return process_data(df, output_file_path, replace)
+
+
+
 if __name__ == "__main__":
+    print("Start Processing Trial Data:")
+    trial_data = load_trial_data()
+    process_trial_data(trial_data)
+
     print("Start Processing Test Data:")
     test_data = load_test_data_a()
     process_test_data(test_data)
