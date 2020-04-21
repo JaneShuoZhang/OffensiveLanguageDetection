@@ -138,6 +138,36 @@ def run_logistic_regression(featurizer, dim=300):
     print("Finish logistic regression in {} mins.".format((end_time - start_time)/60))
 
 
+def run_svm(featurizer, dim=300):
+    start_time = time.time()
+    data = prepare_data(featurizer, dim)
+    
+    # Hyperparameter tuning and select best model
+    svm_classifier = MLDetector('SVC')
+    params_set = {'C':[1.0, 0.9, 0.8, 0.7],'kernel':['rbf','poly']}
+    svm_tune = svm_classifier.hyper_tune(data['train_X'], data['train_y'], params_set, best_only=False)
+    print('Hyperparameter Tuning: ', svm_tune)
+
+    predict_and_save(data, svm_classifier, featurizer)
+    end_time = time.time()
+    print("Finish SVM in {} mins.".format((end_time - start_time)/60))
+
+
+def run_random_forest(featurizer, dim=300):
+    start_time = time.time()
+    data = prepare_data(featurizer, dim)
+    
+    # Hyperparameter tuning and select best model
+    rf_classifier = MLDetector('RF')
+    params_set = {'n_estimators':[50, 80, 100, 150]}
+    svm_tune = rf_classifier.hyper_tune(data['train_X'], data['train_y'], params_set, best_only=False)
+    print('Hyperparameter Tuning: ', svm_tune)
+
+    predict_and_save(data, rf_classifier, featurizer)
+    end_time = time.time()
+    print("Finish random forest in {} mins.".format((end_time - start_time)/60))
+
+
 def predict_and_save(data, classifier, featurizer):
     # Make prediction
     predictions = classifier.predict(data['test_X'])
@@ -158,4 +188,7 @@ def predict_and_save(data, classifier, featurizer):
 
 
 if __name__ == "__main__":
+    run_logistic_regression('ngram')
     run_logistic_regression('glove')
+    run_svm('glove')
+    run_random_forest('glove')
