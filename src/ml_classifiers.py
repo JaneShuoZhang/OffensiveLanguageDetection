@@ -128,8 +128,8 @@ def run_logistic_regression(featurizer, dim=300):
     
     # Hyperparameter tuning and select best model
     lr_classifier = MLDetector('LR')
-    #params_set = {'penalty':['l1'],'solver':['saga','liblinear']}
-    params_set = {'penalty':['l2'],'solver':['sag','newton-cg','lbfgs']}
+    params_set = {'penalty':['l1'],'solver':['saga','liblinear']}
+    #params_set = {'penalty':['l2'],'solver':['sag','newton-cg','lbfgs']}
     lr_tune = lr_classifier.hyper_tune(data['train_X'], data['train_y'], params_set, best_only=False)
     print('Hyperparameter Tuning: ', lr_tune)
 
@@ -179,7 +179,7 @@ def predict_and_save(data, classifier, featurizer):
     origin_test_data['prediction'] = np.array(predicted_labels)
     if not os.path.exists(RESULT_FOLDER):
         os.makedirs(RESULT_FOLDER)
-    output_file_path = os.path.join(RESULT_FOLDER, "{}_{}_prediction.csv",format(classifier.classifier_name, featurizer))
+    output_file_path = os.path.join(RESULT_FOLDER, "{}_{}_prediction.csv".format(classifier.classifier_name, featurizer))
     origin_test_data.to_csv(output_file_path, index=False)
     output_score_path = os.path.join(RESULT_FOLDER, "{}_{}_scores.json".format(classifier.classifier_name, featurizer))
     with open(output_score_path, 'w') as fp:
@@ -188,7 +188,7 @@ def predict_and_save(data, classifier, featurizer):
 
 
 if __name__ == "__main__":
-    run_logistic_regression('ngram')
+    #run_logistic_regression('ngram')
     run_logistic_regression('glove')
-    run_svm('glove')
-    run_random_forest('glove')
+    #run_svm('glove')
+    #run_random_forest('glove')
