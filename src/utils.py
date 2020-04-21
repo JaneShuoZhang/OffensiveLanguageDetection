@@ -1,5 +1,7 @@
+import numpy as np
 import pandas as pd
 import os
+import random
 
 
 OILD_DATA_FOLDER = "../data/OLIDv1"
@@ -42,3 +44,42 @@ def load_trial_data():
     trial_data.drop(['subtask_b', 'subtask_c'], axis=1, inplace=True)
     print("number of trial data: {}".format(trial_data.shape[0]))
     return trial_data
+
+
+def glove2dict(src_filename):
+    """GloVe Reader.
+    Parameters
+    ----------
+    dim : int
+        Full path to the GloVe file to be processed.
+    Returns
+    -------
+    dict
+        Mapping words to their GloVe vectors as `np.array`.
+    """
+    # This distribution has some words with spaces, so we have to
+    # assume its dimensionality and parse out the lines specially:
+    if '.300d' in src_filename:
+        line_parser = lambda line: line.rsplit(" ", 300)
+    else:
+        line_parser = lambda line: line.strip().split()
+    data = {}
+    with open(src_filename, encoding='utf8') as f:
+        while True:
+            try:
+                line = next(f)
+                line = line_parser(line)
+                data[line[0]] = np.array(line[1: ], dtype=np.float)
+            except StopIteration:
+                break
+            except UnicodeDecodeError:
+                pass
+    f.close()
+    print("GloVe loaded. Vocabulary size: {}".format(len(data)))
+    return data
+
+
+def randvec(n=50, lower=-0.5, upper=0.5):
+    """Returns a random vector of length `n`. `w` is ignored.
+    """
+    return np.array([random.uniform(lower, upper) for i in range(n)])

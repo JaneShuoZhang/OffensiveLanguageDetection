@@ -10,7 +10,7 @@ from sklearn.model_selection import GridSearchCV
 import matplotlib.pyplot as plt
 from utils import load_train_data, load_test_data_a, RESULT_FOLDER
 from preprocessing import process_train_data, process_test_data
-from feature_embedding import build_ngrams_dataset
+from feature_embedding import build_ngrams_dataset, build_glove_featurized_dataset
 
 
 class MLDetector:
@@ -23,6 +23,7 @@ class MLDetector:
         }
         if classifier not in classifiers_dict.keys():
             raise Exception('Available Classifiers: ', classifiers_dict.keys())
+        self.classifier_name = classifier
         self.classifier = classifiers_dict[classifier]
         self.params = params
         self.model = self.classifier(**self.params)
@@ -66,7 +67,7 @@ class MLDetector:
         else:
             raise Exception("Model has not been created yet.")
 
-    def test_and_plot(self, test_data, test_labels, plot_title):
+    def test_and_plot(self, test_data, test_labels):
         class_num = len(set(test_labels))
         predicted_labels = self.model.predict(test_data)
         macro_f1 = f1_score(test_labels, predicted_labels, average='macro')
@@ -78,7 +79,7 @@ class MLDetector:
         conf_mat = confusion_matrix(test_labels, predicted_labels)
         labels = [i for i in range(class_num)]
         plt.imshow(conf_mat, interpolation='nearest', cmap=plt.cm.Blues)
-        plt.title('Confusion Matrix: ' + plot_title)
+        plt.title('Confusion Matrix')
         plt.colorbar()
         tick_marks = np.arrange(len(labels))
         plt.xticks(tick_marks, labels, rotation=45)
@@ -90,8 +91,10 @@ class MLDetector:
 
 
 
-def run_ngram_logistic_regression():
-    start_time = time.time()
+def prepare_data(featurizer, dim):
+    if featurizer != 'ngram' and featurizer != 'glove':
+        print("Please choose featurizer: 'ngram' or 'glove'.")
+        return
 
     # Load and preprocessing data.
     train_data = load_train_data()
@@ -100,43 +103,59 @@ def run_ngram_logistic_regression():
     test_data = process_test_data(test_data)
 
     # Get training X, y, and testing X, y
-    train_set_ngram = build_ngrams_dataset(train_data)
+    if featurizer == 'ngram':
+        train_set_ngram = build_ngrams_dataset(train_data)       
+        vectorizer = train_set_ngram['vectorizer']
+        test_set_ngram = build_ngrams_dataset(test_data, vectorizer=vectorizer)
+    else:
+        train_set_ngram = build_glove_featurized_dataset(train_data, dim)
+        test_set_ngram = build_glove_featurized_dataset(test_data, dim)
     train_X = train_set_ngram['X']
     train_y = train_set_ngram['y']
-    vectorizer = train_set_ngram['vectorizer']
     print("Shape of train_X: {}".format(train_X.shape))
-    test_set_ngram = build_ngrams_dataset(test_data, vectorizer=vectorizer)
     test_X = test_set_ngram['X']
     test_y = test_set_ngram['y']
     print("Shape of test_X: {}".format(test_X.shape))
+    return {'train_X': train_X,
+            'train_y': train_y,
+            'test_X': test_X,
+            'test_y': test_y}
 
+
+def run_logistic_regression(featurizer, dim=300):   
+    start_time = time.time()
+    data = prepare_data(featurizer, dim)
+    
     # Hyperparameter tuning and select best model
     lr_classifier = MLDetector('LR')
-    params_set = {'penalty':['l1'],'solver':['saga','liblinear']}
-    #params_set = {'penalty':['l2'],'solver':['sag','newton-cg','lbfgs']}
-    lr_tune = lr_classifier.hyper_tune(train_X, train_y, params_set, best_only=False)
+    #params_set = {'penalty':['l1'],'solver':['saga','liblinear']}
+    params_set = {'penalty':['l2'],'solver':['sag','newton-cg','lbfgs']}
+    lr_tune = lr_classifier.hyper_tune(data['train_X'], data['train_y'], params_set, best_only=False)
     print('Hyperparameter Tuning: ', lr_tune)
 
+    predict_and_save(data, lr_classifier, featurizer)
+    end_time = time.time()
+    print("Finish logistic regression in {} mins.".format((end_time - start_time)/60))
+
+
+def predict_and_save(data, classifier, featurizer):
     # Make prediction
-    predictions = lr_classifier.predict(test_X)
-    scores = lr_classifier.score(test_X, test_y)
+    predictions = classifier.predict(data['test_X'])
+    scores = classifier.score(data['test_X'], data['test_y'])
 
     # Save prediction
     origin_test_data = load_test_data_a()
-    predicted_labels = ['OFF' if y==1 else 'NOT' for y in test_y]
+    predicted_labels = ['OFF' if y==1 else 'NOT' for y in data['test_y']]
     origin_test_data['prediction'] = np.array(predicted_labels)
     if not os.path.exists(RESULT_FOLDER):
         os.makedirs(RESULT_FOLDER)
-    output_file_path = os.path.join(RESULT_FOLDER, "LR_ngram_prediction.csv")
+    output_file_path = os.path.join(RESULT_FOLDER, "{}_{}_prediction.csv",format(classifier.classifier_name, featurizer))
     origin_test_data.to_csv(output_file_path, index=False)
-    output_score_path = os.path.join(RESULT_FOLDER, "LR_ngram_scores.json")
+    output_score_path = os.path.join(RESULT_FOLDER, "{}_{}_scores.json".format(classifier.classifier_name, featurizer))
     with open(output_score_path, 'w') as fp:
         json.dump(scores, fp)
-
-    end_time = time.time()
-    print("Finish logistic regression (ngram) in {} mins.".format((end_time - start_time)/60))
 
 
 
 if __name__ == "__main__":
-    run_ngram_logistic_regression()
+    run_logistic_regression('glove')

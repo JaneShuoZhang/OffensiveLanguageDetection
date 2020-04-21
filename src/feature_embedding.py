@@ -1,8 +1,17 @@
+import numpy as np
 import pandas as pd
+import os
 from collections import Counter
 from sklearn.feature_extraction import DictVectorizer
 from nltk.util import ngrams
+from utils import glove2dict, randvec
 
+EMBEDDING_FOLDER = "../embedding"
+GLOVE_EMBEDDING_FILE = {25: "glove.twitter.27B.25d.txt",
+                        50: "glove.twitter.27B.50d.txt",
+                        100: "glove.twitter.27B.100d.txt",
+                        200: "glove.twitter.27B.200d.txt",
+                        300: "glove.42B.300d.txt"}
 
 def get_character_ngrams_of_word(word, n):
     if n == 1:
@@ -62,3 +71,41 @@ def build_ngrams_dataset(df, n=4, vectorizer=None):
     return {'X': feature_matrix,
             'y': labels,
             'vectorizer': vectorizer}
+
+
+def glove_featurizer(tweet, glove_lookup, np_func=np.sum):
+    """Get vector representation of one tweet.
+    """
+    reps = []
+    tokens = tweet.split()
+    for word in tokens:
+        rep = glove_lookup.get(word)
+        if rep is not None:
+            reps.append(rep)
+    # A random representation of the right dimensionality if the
+    # example happens not to overlap with GloVe's vocabulary:
+    if len(reps) == 0:
+        dim = len(next(iter(glove_lookup.values())))                
+        return randvec(n=dim)
+    else:
+        return np_func(reps, axis=0)
+
+
+def build_glove_featurized_dataset(df, dim=300, np_func=np.sum):
+    if dim not in GLOVE_EMBEDDING_FILE:
+        print("GloVe file of dim {} is not found.".format(dim))
+        return None
+    
+    glove_file_path = os.path.join(EMBEDDING_FOLDER, GLOVE_EMBEDDING_FILE[dim])
+    glove_lookup = glove2dict(glove_file_path)
+
+    feature_matrix = []
+    labels = []
+
+    for index, row in df.iterrows():
+        feature_matrix.append(glove_featurizer(row['tweet'], glove_lookup, np_func))
+        encoded_label = 1 if row['subtask_a'] == 'OFF' else 0
+        labels.append(encoded_label)
+
+    return {'X': np.array(feature_matrix),
+            'y': labels}
