@@ -97,7 +97,7 @@ def build_glove_featurized_dataset(df, dim=300, np_func=np.sum):
         return None
     
     glove_file_path = os.path.join(EMBEDDING_FOLDER, GLOVE_EMBEDDING_FILE[dim])
-    glove_lookup = glove2dict(glove_file_path)
+    glove_lookup = glove2dict(glove_file_path, dim)
 
     feature_matrix = []
     labels = []
@@ -109,3 +109,32 @@ def build_glove_featurized_dataset(df, dim=300, np_func=np.sum):
 
     return {'X': np.array(feature_matrix),
             'y': labels}
+
+
+def generate_glove_embedding(dim=300):
+    if dim not in GLOVE_EMBEDDING_FILE:
+        print("GloVe file of dim {} is not found.".format(dim))
+        return None
+
+    glove_file_path = os.path.join(EMBEDDING_FOLDER, GLOVE_EMBEDDING_FILE[dim])
+    glove_lookup = glove2dict(glove_file_path, dim)
+
+    vocal = ['$UNK']
+    embedding = [list(np.random.uniform(low=-1.0, high=1.0, size=dim))]
+    for key, value in glove_lookup.items():
+        vocal.append(key)
+        embedding.append(list(value))
+
+    embedding = np.array(embedding, dtype=np.float)
+    print("Vocabulary size: {}, Embedding size{}".format(len(vocal), embedding.shape))
+    return [vocal, embedding]
+
+def build_LSTM_dataset(df, max_seq_length):
+    feature_matrix = []
+    labels = []
+
+    for index, row in df.iterrows():
+        feature = row['tweet'].split()
+        feature_matrix.append(feature[:max_seq_length])
+        labels.append(row['subtask_a'])
+    return [feature_matrix, labels]

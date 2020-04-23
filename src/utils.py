@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import random
-
+import sys
 
 OILD_DATA_FOLDER = "../data/OLIDv1"
 TRAIN_DATA_FILE = "olid-training-v1.tsv"
@@ -46,7 +46,7 @@ def load_trial_data():
     return trial_data
 
 
-def glove2dict(src_filename):
+def glove2dict(src_filename, dim=300):
     """GloVe Reader.
     Parameters
     ----------
@@ -69,7 +69,8 @@ def glove2dict(src_filename):
             try:
                 line = next(f)
                 line = line_parser(line)
-                data[line[0]] = np.array(line[1: ], dtype=np.float)
+                if len(line) == dim+1:
+                    data[line[0]] = np.array(line[1: ], dtype=np.float)
             except StopIteration:
                 break
             except UnicodeDecodeError:
@@ -83,3 +84,12 @@ def randvec(n=50, lower=-0.5, upper=0.5):
     """Returns a random vector of length `n`. `w` is ignored.
     """
     return np.array([random.uniform(lower, upper) for i in range(n)])
+
+def progress_bar(msg):
+    """Simple over-writing progress bar."""
+    sys.stderr.write('\r')
+    sys.stderr.write(msg)
+    sys.stderr.flush()
+
+def change_to_binary(label):
+    return [0 if(i == 'OFF') else 1 for i in label]
