@@ -80,9 +80,11 @@ def glove2dict(src_filename, dim=300):
     return data
 
 
-def randvec(n=50, lower=-0.5, upper=0.5):
+def randvec(n=50, lower=-0.5, upper=0.5, random_seed=None):
     """Returns a random vector of length `n`. `w` is ignored.
     """
+    if random_seed is not None:
+        random.seed(random_seed)
     return np.array([random.uniform(lower, upper) for i in range(n)])
 
 def progress_bar(msg):

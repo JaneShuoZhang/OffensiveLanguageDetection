@@ -43,7 +43,7 @@ class MLDetector:
                 'macro-f1': f1_score(test_labels, predicted_labels, average='macro'),
                 'pos-f1': pos_f1}
 
-    def hyper_tune(self, train_data, train_labels, tune_params=None, best_only=False, scoring='f1'):
+    def hyper_tune(self, train_data, train_labels, tune_params=None, best_only=False, scoring='f1_macro'):
         if not tune_params:
             tune_params = self.params
         tuner = GridSearchCV(self.model, tune_params, n_jobs=4, verbose=2, scoring=scoring, cv=5)
@@ -188,7 +188,7 @@ def predict_and_save(data, classifier, featurizer):
 
 
 if __name__ == "__main__":
-    #run_logistic_regression('ngram')
+    run_logistic_regression('ngram')
     run_logistic_regression('glove')
-    #run_svm('glove')
-    #run_random_forest('glove')
+    run_svm('glove')
+    run_random_forest('glove')
