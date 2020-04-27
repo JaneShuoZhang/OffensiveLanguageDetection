@@ -1,15 +1,15 @@
 import pandas as pd
 import numpy as np
 from preprocessing import process_train_data, process_test_data, process_trial_data
-from utils import load_train_data, load_test_data_a, load_trial_data, change_to_binary
+from utils import load_train_data, load_test_data_a, load_trial_data, change_to_binary, RESULT_FOLDER
 from feature_embedding import generate_glove_embedding, build_LSTM_dataset
 from sklearn.metrics import classification_report, accuracy_score, f1_score
-
+import os
 import torch
 import torch.nn as nn
 import torch.utils.data
 from torch_model_base import TorchModelBase
-from utils import progress_bar
+from utils import progress_bar, RESULT_FOLDER
 
 __author__ = "zhexuan"
 __version__ = "CS224u, Stanford, Spring 2020"
@@ -297,7 +297,7 @@ class TorchLSTMClassifier(TorchModelBase):
         return new_X, torch.LongTensor(seq_lengths)
 
 
-def LSTM_model(embed_dim=300):
+def LSTM_model(embed_dim=300, max_iter=100, hidden_dim=50, bidirectional=False):
     vocab, embedding = generate_glove_embedding(embed_dim)
 
     train_data = load_train_data()
@@ -308,9 +308,9 @@ def LSTM_model(embed_dim=300):
         vocab=vocab,
         embedding=embedding,
         embed_dim=embed_dim,
-        max_iter=100,
-        bidirectional=False,
-        hidden_dim=50)
+        max_iter=max_iter,
+        bidirectional=bidirectional,
+        hidden_dim=hidden_dim)
 
     print(mod)
 
@@ -321,6 +321,11 @@ def LSTM_model(embed_dim=300):
     X_test, y_test = build_LSTM_dataset(test_data, 128)
 
     predictions = mod.predict(X_test)
+    test_data['prediction'] = np.array(predictions)
+    if not os.path.exists(RESULT_FOLDER):
+        os.makedirs(RESULT_FOLDER)
+    output_file_path = os.path.join(RESULT_FOLDER, "LSTM_{}-embedding_{}-hidden_prediction.csv".format(embed_dim, hidden_dim))
+    test_data.to_csv(output_file_path, index=False)
 
     print("\nClassification report:")
     print(classification_report(y_test, predictions))
@@ -332,4 +337,4 @@ def LSTM_model(embed_dim=300):
 
 
 if __name__ == '__main__':
-   LSTM_model(300)
+   LSTM_model(embed_dim=300, max_iter=200, hidden_dim=64, bidirectional=False)
