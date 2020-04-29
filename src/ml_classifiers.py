@@ -12,6 +12,9 @@ from utils import load_train_data, load_test_data_a, RESULT_FOLDER
 from preprocessing import process_train_data, process_test_data
 from feature_embedding import build_ngrams_dataset, build_glove_featurized_dataset
 
+__author__ = "Shuo Zhang"
+__version__ = "CS224u, Stanford, Spring 2020"
+
 
 class MLDetector:
 

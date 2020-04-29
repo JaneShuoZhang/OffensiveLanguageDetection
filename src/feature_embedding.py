@@ -129,6 +129,7 @@ def generate_glove_embedding(dim=300):
     print("Vocabulary size: {}, Embedding size{}".format(len(vocal), embedding.shape))
     return [vocal, embedding]
 
+
 def build_LSTM_dataset(df, max_seq_length):
     feature_matrix = []
     labels = []
