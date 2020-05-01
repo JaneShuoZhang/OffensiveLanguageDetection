@@ -5,6 +5,7 @@ from utils import load_train_data, load_test_data_a, load_trial_data, change_to_
 from feature_embedding import generate_glove_embedding, build_LSTM_dataset
 from sklearn.metrics import classification_report, accuracy_score, f1_score
 import os
+import time
 import torch
 import torch.nn as nn
 import torch.utils.data
@@ -231,7 +232,8 @@ class TorchCNNClassifier(TorchModelBase):
         return [self.classes_[i] for i in probs.argmax(axis=1)]
 
 
-def CNN_model(embed_dim=300, max_iter=100, out_channels=100, kernel_sizes=[3,4,5], dropout_prob=0.2):
+def CNN_model(embed_dim=50, max_iter=10, out_channels=30, kernel_sizes=[3,4,5], dropout_prob=0.1):
+    start_time = time.time()
     vocab, embedding = generate_glove_embedding(embed_dim)
 
     train_data = load_train_data()
@@ -257,15 +259,17 @@ def CNN_model(embed_dim=300, max_iter=100, out_channels=100, kernel_sizes=[3,4,5
     test_data['prediction'] = np.array(predictions)
     if not os.path.exists(RESULT_FOLDER):
         os.makedirs(RESULT_FOLDER)
-    output_file_path = os.path.join(RESULT_FOLDER, "CNN_{}-embedding_{}-filters_prediction.csv".format(embed_dim, out_channels))
+    output_file_path = os.path.join(RESULT_FOLDER, "CNN_{}-embedding_{}-filters_{}-iter_prediction.csv".format(embed_dim, out_channels, max_iter))
     test_data.to_csv(output_file_path, index=False)
 
     print("\nClassification report:")
     print(classification_report(y_test, predictions))
 
     f1_macro = f1_score(change_to_binary(y_test), change_to_binary(predictions), average='macro')
+    print("CNN embedding dim: {}, out channels: {}, max_iter: {}, dropout: {}, macro f1 score: {}".format(embed_dim, out_channels, max_iter, dropout_prob, f1_macro))
 
-    print("CNN embedding dim: {}, f1 score: {}".format(embed_dim, f1_macro))
+    end_time = time.time()
+    print("Finish CNN in {} mins.".format((end_time - start_time)/60))
     return f1_macro
 
 
