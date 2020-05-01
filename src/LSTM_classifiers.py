@@ -297,7 +297,7 @@ class TorchLSTMClassifier(TorchModelBase):
         return new_X, torch.LongTensor(seq_lengths)
 
 
-def LSTM_model(embed_dim=300, max_iter=100, hidden_dim=50, bidirectional=False):
+def LSTM_model(embed_dim=300, max_iter=100,batch_size=32,hidden_dim=50,eta = 0.001, bidirectional=False):
     vocab, embedding = generate_glove_embedding(embed_dim)
 
     train_data = load_train_data()
@@ -309,6 +309,8 @@ def LSTM_model(embed_dim=300, max_iter=100, hidden_dim=50, bidirectional=False):
         embedding=embedding,
         embed_dim=embed_dim,
         max_iter=max_iter,
+        batch_size=batch_size,
+        eta=eta,
         bidirectional=bidirectional,
         hidden_dim=hidden_dim)
 
@@ -330,11 +332,11 @@ def LSTM_model(embed_dim=300, max_iter=100, hidden_dim=50, bidirectional=False):
     print("\nClassification report:")
     print(classification_report(y_test, predictions))
 
-    F1_score = f1_score(change_to_binary(y_test), change_to_binary(predictions))
+    F1_score = f1_score(change_to_binary(y_test), change_to_binary(predictions), average='macro')
 
     print("LSTM embedding dim: {}, f1 score: {}".format(embed_dim, F1_score))
     return F1_score
 
 
 if __name__ == '__main__':
-   LSTM_model(embed_dim=300, max_iter=200, hidden_dim=64, bidirectional=False)
+   LSTM_model(embed_dim=300, max_iter=50, batch_size=64, eta=0.001, hidden_dim=64)
