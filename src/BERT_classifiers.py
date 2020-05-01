@@ -10,8 +10,9 @@ from torch.utils.data import TensorDataset,DataLoader
 from torch_model_base import TorchModelBase
 from transformers import BertTokenizer, get_linear_schedule_with_warmup
 from transformers import BertForSequenceClassification, AdamW, BertConfig
-from utils import progress_bar, RESULT_FOLDER
-
+from utils import progress_bar, RESULT_FOLDER, format_time
+import time
+import datetime
 
 class TorchBertClassifier(TorchModelBase):
     """LSTM-based Recurrent Neural Network for classification problems.
@@ -151,6 +152,7 @@ class TorchBertClassifier(TorchModelBase):
                                                     num_training_steps=total_steps)
 
         # Train:
+        t0 = time.time()
         for iteration in range(1, self.max_iter + 1):
             epoch_error = 0.0
             for step, batch in enumerate(dataloader):
@@ -201,7 +203,10 @@ class TorchBertClassifier(TorchModelBase):
 
                 # Incremental predictions where possible:
                 if step % 50 == 0 and not step == 0:
-                    print('Finished batch {}, loss is {}'.format(step, loss.item()))
+                    # Calculate elapsed time in minutes.
+                    elapsed = format_time(time.time() - t0)
+
+                    print('Interation: {}, Finished batch {}, loss is {}. Elapsed: {}'.format(iteration, step, loss.item(), elapsed))
 
             self.errors.append(epoch_error)
             progress_bar("Finished epoch {} of {}; error is {}".format(
