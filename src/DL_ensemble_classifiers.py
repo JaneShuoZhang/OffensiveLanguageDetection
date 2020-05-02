@@ -308,7 +308,7 @@ class TorchLSTM_CNNClassifier(TorchModelBase):
         return new_X, torch.LongTensor(seq_lengths)
 
 
-def BiLSTM_CNN_model(embed_dim=300, batch_size=1028, max_iter=100, hidden_dim=50, bidirectional=True, out_channels=30, kernel_sizes=[3,4,5], dropout_prob=0.1):
+def BiLSTM_CNN_model(embed_dim=50, batch_size=1024, max_iter=10, hidden_dim=50, bidirectional=True, out_channels=30, kernel_sizes=[3,4,5], dropout_prob=0.1):
     start_time = time.time()
     vocab, embedding = generate_glove_embedding(embed_dim)
 
@@ -338,16 +338,16 @@ def BiLSTM_CNN_model(embed_dim=300, batch_size=1028, max_iter=100, hidden_dim=50
     test_data['prediction'] = np.array(predictions)
     if not os.path.exists(RESULT_FOLDER):
         os.makedirs(RESULT_FOLDER)
-    output_file_path = os.path.join(RESULT_FOLDER, "BiLSTM_CNN_{}-embedding_{}-hidden_{}-filters_{}-iter_prediction.csv". \
-        format(embed_dim, hidden_dim, out_channels, max_iter))
+    output_file_path = os.path.join(RESULT_FOLDER, "BiLSTM_CNN_{}-embedding_{}-batchsize_{}-hidden_{}-filters_{}-iter_prediction.csv". \
+        format(embed_dim, batch_size, hidden_dim, out_channels, max_iter))
     test_data.to_csv(output_file_path, index=False)
 
     print("\nClassification report:")
     print(classification_report(y_test, predictions))
 
     f1_macro = f1_score(change_to_binary(y_test), change_to_binary(predictions), average='macro')
-    print("BiLSTM+CNN embedding dim: {}, hiddend dim: {}, out channels: {}, max_iter: {}, dropout: {}, macro f1 score: {}" \
-        .format(embed_dim, hidden_dim, out_channels, max_iter, dropout_prob, f1_macro))
+    print("BiLSTM+CNN embedding dim: {}, batch size: {}, hiddend dim: {}, out channels: {}, max_iter: {}, dropout: {}, macro f1 score: {}" \
+        .format(embed_dim, batch_size, hidden_dim, out_channels, max_iter, dropout_prob, f1_macro))
 
     end_time = time.time()
     print("Finish BiLSTM+CNN in {} mins.".format((end_time - start_time)/60))
@@ -355,4 +355,4 @@ def BiLSTM_CNN_model(embed_dim=300, batch_size=1028, max_iter=100, hidden_dim=50
 
 
 if __name__ == '__main__':
-   BiLSTM_CNN_model()
+    BiLSTM_CNN_model()
