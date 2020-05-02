@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import random
 import sys
+import time
+import datetime
 
 OILD_DATA_FOLDER = "../data/OLIDv1"
 TRAIN_DATA_FILE = "olid-training-v1.tsv"
@@ -95,3 +97,14 @@ def progress_bar(msg):
 
 def change_to_binary(label):
     return [0 if(i == 'OFF') else 1 for i in label]
+
+
+def format_time(elapsed):
+    '''
+    Takes a time in seconds and returns a string hh:mm:ss
+    '''
+    # Round to the nearest second.
+    elapsed_rounded = int(round((elapsed)))
+
+    # Format as hh:mm:ss
+    return str(datetime.timedelta(seconds=elapsed_rounded))
