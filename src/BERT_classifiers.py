@@ -224,6 +224,8 @@ class TorchBertClassifier(TorchModelBase):
         with torch.no_grad():
             self.model.to(self.device)
             input_ids, attention_masks = self._prepare_dataset(X)
+            input_ids = input_ids.to(self.device)
+            attention_masks = attention_masks.to(self.device)
 
             output = self.model(input_ids,
                                 token_type_ids=None,
@@ -280,7 +282,7 @@ def BERT_model(max_set_length=128,max_iter=2,batch_size=32,eta=2e-5,eps=1e-8):
     test_data['prediction'] = np.array(predictions)
     if not os.path.exists(RESULT_FOLDER):
         os.makedirs(RESULT_FOLDER)
-    output_file_path = os.path.join(RESULT_FOLDER, "BERT_prediction.csv")
+    output_file_path = os.path.join(RESULT_FOLDER, "BERT_Iter_{}_prediction.csv".format(max_iter))
     test_data.to_csv(output_file_path, index=False)
 
     print("\nClassification report:")
@@ -291,10 +293,10 @@ def BERT_model(max_set_length=128,max_iter=2,batch_size=32,eta=2e-5,eps=1e-8):
     return F1_score
 
 if __name__ == '__main__':
-    seed_val = 42
+    seed_val = 0
 
     random.seed(seed_val)
     np.random.seed(seed_val)
     torch.manual_seed(seed_val)
     torch.cuda.manual_seed_all(seed_val)
-    BERT_model(max_iter=1)
+    BERT_model(max_iter=3)
