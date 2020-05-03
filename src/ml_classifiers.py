@@ -178,7 +178,7 @@ def predict_and_save(data, classifier, featurizer):
 
     # Save prediction
     origin_test_data = load_test_data_a()
-    predicted_labels = ['OFF' if y==1 else 'NOT' for y in data['test_y']]
+    predicted_labels = ['OFF' if y==1 else 'NOT' for y in predictions]
     origin_test_data['prediction'] = np.array(predicted_labels)
     if not os.path.exists(RESULT_FOLDER):
         os.makedirs(RESULT_FOLDER)
