@@ -47,6 +47,6 @@ def compare_results(RESULT_FOLDER):
 if __name__ == '__main__':
     RESULT_FOLDER = "result"
 
-    #compare_results(RESULT_FOLDER)
+    compare_results(RESULT_FOLDER)
 
     plot_confustion_matrix(os.path.join(RESULT_FOLDER, 'BERT_Iter_3_prediction.csv'))
