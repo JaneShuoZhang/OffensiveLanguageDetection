@@ -9,6 +9,7 @@ def calculate_result(filename):
     results = pd.read_csv(filename)
     result_summary = classification_report(results["subtask_a"], results["prediction"], output_dict=True)
     experiment_result = pd.DataFrame({'accuracy': [result_summary['accuracy']],
+                                      'OFF_F1': [result_summary["OFF"]["f1-score"]],
                                       'macro_precision': [result_summary["macro avg"]["precision"]],
                                       'macro_recall': [result_summary["macro avg"]["recall"]],
                                       'macro_F1': [result_summary["macro avg"]["f1-score"]],
@@ -30,7 +31,7 @@ def plot_confustion_matrix(filename):
     plt.savefig(plt_save_path)
 
 def compare_results(RESULT_FOLDER):
-    experiment = pd.DataFrame({'method': [], 'accuracy': [],
+    experiment = pd.DataFrame({'method': [], 'accuracy': [], 'OFF_F1': [],
                                'macro_precision': [], 'macro_recall': [], 'macro_F1': [],
                                'micro_precision': [], 'micro_recall': [], 'micro_F1': []})
     for dirName, subdirList, fileList in os.walk(RESULT_FOLDER):
@@ -49,4 +50,4 @@ if __name__ == '__main__':
 
     compare_results(RESULT_FOLDER)
 
-    plot_confustion_matrix(os.path.join(RESULT_FOLDER, 'BERT_Iter_3_prediction.csv'))
+    #plot_confustion_matrix(os.path.join(RESULT_FOLDER, 'BERT_Iter_3_prediction.csv'))
