@@ -1,7 +1,9 @@
 import os
 import pandas as pd
 import numpy as np
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sn
 
 def calculate_result(filename):
     results = pd.read_csv(filename)
@@ -15,8 +17,19 @@ def calculate_result(filename):
                                       'micro_F1': [result_summary["weighted avg"]["f1-score"]]})
     return experiment_result
 
-if __name__ == '__main__':
-    RESULT_FOLDER = "result"
+def plot_confustion_matrix(filename):
+    results = pd.read_csv(filename)
+    confusion = pd.DataFrame(confusion_matrix(results["subtask_a"], results["prediction"]),
+                        index=["NOT", "OFF"],
+                        columns=["NOT", "OFF"])
+    plt_save_path = filename[:-4] + '.png'
+    sn.heatmap(confusion, cmap="YlGnBu", annot=True, fmt="d")
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
+    plt.title("Confustion Matrix")
+    plt.savefig(plt_save_path)
+
+def compare_results(RESULT_FOLDER):
     experiment = pd.DataFrame({'method': [], 'accuracy': [],
                                'macro_precision': [], 'macro_recall': [], 'macro_F1': [],
                                'micro_precision': [], 'micro_recall': [], 'micro_F1': []})
@@ -30,3 +43,10 @@ if __name__ == '__main__':
                 experiment = pd.concat([experiment, experiment_result], ignore_index=True)
 
     experiment.to_csv(os.path.join(RESULT_FOLDER, "experiment_compare.csv"), index=False)
+
+if __name__ == '__main__':
+    RESULT_FOLDER = "result"
+
+    #compare_results(RESULT_FOLDER)
+
+    plot_confustion_matrix(os.path.join(RESULT_FOLDER, 'BERT_Iter_3_prediction.csv'))
